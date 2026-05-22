@@ -1,0 +1,10 @@
+{
+  "best_endpoint": null,
+  "base_url": null,
+  "mode": null,
+  "stream_name": null,
+  "score": null,
+  "message_rate_per_second": null,
+  "first_message_latency_ms": null,
+  "saved_at": null
+}
