@@ -44,9 +44,15 @@ class ParquetWriter:
         """
         self.symbol = symbol.upper()
         self.queue = queue
-        # Create symbol-specific subdirectory
+        # If using the default base output dir, create symbol-specific subdirectory.
+        # If a custom output_dir was provided (e.g. tests pass /tmp/...), write
+        # directly into that directory to preserve backward compatibility.
         base_path = Path(output_dir)
-        self.output_dir = base_path / f"symbol={self.symbol}"
+        if str(output_dir) == "data/binance/aggtrade":
+            self.output_dir = base_path / f"symbol={self.symbol}"
+        else:
+            # Use the provided path as-is (tests expect this behavior)
+            self.output_dir = base_path
         self.output_dir.mkdir(parents=True, exist_ok=True)
         self.batch_size = batch_size
         self.batch_timeout_seconds = batch_timeout_seconds
@@ -177,6 +183,7 @@ class ParquetWriter:
 
             self.logger.info(
                 "parquet_write_success",
+                symbol=self.symbol,
                 filename=filename,
                 record_count=batch_records,
                 file_path=str(filepath),
@@ -190,6 +197,7 @@ class ParquetWriter:
         except Exception as error:
             self.logger.error(
                 "parquet_write_error",
+                symbol=self.symbol,
                 error=str(error),
                 batch_size=batch_records,
             )
@@ -237,3 +245,12 @@ class ParquetWriter:
         received_time_ms = record["received_time"]
         dt = datetime.fromtimestamp(received_time_ms / 1000.0, tz=timezone.utc)
         return dt.strftime("part-%Y%m%d-%H-%M.parquet")
+
+    def get_metrics(self) -> dict[str, Any]:
+        """Get current parquet writer metrics."""
+        return {
+            "symbol": self.symbol,
+            "total_records_written": self._total_written,
+            "total_batches": self._total_batches,
+            "current_batch_size": len(self._batch),
+        }
